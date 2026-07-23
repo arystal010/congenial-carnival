@@ -465,6 +465,8 @@ function hideWelcomeScreen() {
     if (!welcomeScreen) return;
 
     welcomeScreen.classList.remove("active");
+    // Remove from document flow after transition so chat screen fills viewport
+    setTimeout(() => { welcomeScreen.style.display = "none"; }, 400);
 
     // Show chat screen with proper initialization
     if (chatScreen) {
