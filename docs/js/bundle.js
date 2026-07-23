@@ -535,7 +535,6 @@ function initWelcomeScreen(onEnter) {
 
         setTimeout(() => {
             hideWelcomeScreen();
-            setStorage("arys_welcome_dismissed", "true");
             if (onEnter) onEnter();
         }, 400);
     });
@@ -547,6 +546,24 @@ function initWelcomeScreen(onEnter) {
             enterBtn.click();
         }
     });
+
+    // Welcome screen settings button
+    const welcomeSettingsBtn = $("#welcome-settings-btn");
+    if (welcomeSettingsBtn) {
+        welcomeSettingsBtn.addEventListener("click", () => {
+            const settingsModal = $("#settings-modal");
+            if (settingsModal) settingsModal.classList.add("active");
+        });
+    }
+
+    // Welcome screen feedback button
+    const feedbackFromWelcome = $("#feedback-from-welcome");
+    if (feedbackFromWelcome) {
+        feedbackFromWelcome.addEventListener("click", () => {
+            const feedbackModal = $("#feedback-modal");
+            if (feedbackModal) feedbackModal.classList.add("active");
+        });
+    }
 
     // Touch ripple effect on button
     enterBtn.addEventListener("pointerdown", (e) => {
@@ -1449,18 +1466,6 @@ function initApp() {
 
     // Show welcome screen
     showWelcomeScreen();
-
-    // Check for welcome screen dismissal
-    const dismissed = getStorage("arys_welcome_dismissed");
-    if (dismissed) {
-        hideWelcomeScreen();
-        initChat();
-        // Wait for Three.js to be ready
-        waitForThreeJS().then(init3D).catch(() => {
-            console.warn("Three.js not available, using CSS fallback");
-            setupCSSFallback();
-        });
-    }
 
     // Global event listeners
     setupGlobalListeners();
