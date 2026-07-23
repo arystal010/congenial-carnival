@@ -489,10 +489,15 @@ ul, ol {
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-    transition: transform var(--transition-base);
+    transition: margin-left var(--transition-base), transform var(--transition-base);
     z-index: 10;
     height: 100vh;
     overflow: hidden;
+    margin-left: calc(-1 * var(--sidebar-width));
+}
+
+.sidebar.open {
+    margin-left: 0;
 }
 
 .sidebar-header {

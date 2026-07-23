@@ -672,26 +672,26 @@ function setupChatEventListeners() {
 }
 
 function setupChatHeaderButtons() {
+    const openFeedback = () => {
+        const feedbackModal = $("#feedback-modal");
+        if (feedbackModal) feedbackModal.classList.add("active");
+    };
+    const openSettings = () => {
+        const settingsModal = $("#settings-modal");
+        if (settingsModal) settingsModal.classList.add("active");
+    };
+
+    // Chat header buttons
     const chatFeedbackBtn = $("#chat-feedback-btn");
     const chatSettingsBtn = $("#chat-settings-btn");
+    if (chatFeedbackBtn) chatFeedbackBtn.addEventListener("click", openFeedback);
+    if (chatSettingsBtn) chatSettingsBtn.addEventListener("click", openSettings);
 
-    if (chatFeedbackBtn) {
-        chatFeedbackBtn.addEventListener("click", () => {
-            const feedbackModal = $("#feedback-modal");
-            if (feedbackModal) {
-                feedbackModal.classList.add("active");
-            }
-        });
-    }
-
-    if (chatSettingsBtn) {
-        chatSettingsBtn.addEventListener("click", () => {
-            const settingsModal = $("#settings-modal");
-            if (settingsModal) {
-                settingsModal.classList.add("active");
-            }
-        });
-    }
+    // Sidebar footer buttons
+    const sidebarFeedbackBtn = $("#sidebar-feedback");
+    const sidebarSettingsBtn = $("#sidebar-settings");
+    if (sidebarFeedbackBtn) sidebarFeedbackBtn.addEventListener("click", openFeedback);
+    if (sidebarSettingsBtn) sidebarSettingsBtn.addEventListener("click", openSettings);
 }
 
 async function handleSendMessage() {
