@@ -480,7 +480,7 @@ function hideWelcomeScreen() {
 
     // Restart 3D background for chat screen with proper waiting
     setTimeout(() => {
-        stop3D();
+        dispose3D();
         setTimeout(() => {
             waitForThreeJS().then(init3D).catch(() => {
                 console.warn("Three.js not available, using CSS fallback");
@@ -1378,6 +1378,46 @@ function stop3D() {
     }
 }
 
+function dispose3D() {
+    isRunning = false;
+    if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+    }
+    // Remove canvas so init3D() can build a fresh one next time
+    const container = document.getElementById("threeContainer");
+    if (container) {
+        const canvas = container.querySelector("canvas");
+        if (canvas) canvas.parentNode.removeChild(canvas);
+    }
+    // Dispose WebGL renderer
+    if (renderer) {
+        renderer.dispose();
+        renderer = null;
+    }
+    // Dispose particle geometry/material
+    if (particles) {
+        if (particles.geometry) particles.geometry.dispose();
+        if (particles.material) particles.material.dispose();
+        particles = null;
+    }
+    // Dispose floaters
+    floaters.forEach(f => {
+        if (f.geometry) f.geometry.dispose();
+        if (f.material) f.material.dispose();
+    });
+    floaters = [];
+    // Dispose AI core and rotating objects
+    rotatingObjects.forEach(o => {
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) o.material.dispose();
+    });
+    rotatingObjects = [];
+    aiCore = null;
+    scene = null;
+    camera = null;
+}
+
 // ============================================================
 // MAIN APP INITIALIZATION
 // ============================================================
@@ -1467,7 +1507,7 @@ function setupGlobalListeners() {
     // Visibility change - pause 3D when tab hidden
     document.addEventListener("visibilitychange", () => {
         if (document.hidden) {
-            stop3D();
+            dispose3D();
         } else {
             // Wait for Three.js to be ready before re-initializing
             waitForThreeJS().then(init3D).catch(() => {
