@@ -1,0 +1,16 @@
+url*https://arystal010.github.io/congenial-carnival/ 
+
+The real bug is in docs/js/bundle.js, NOT in the modular files docs/js/app.js or docs/js/3d.js — index.html only loads bundle.js via <script src="js/bundle.js">, so the modular files are never actually executed. Any fix must be applied directly inside bundle.js (or you need to add a real build step that compiles the modular files into bundle.js as part of the deploy process).
+
+Exact root cause of the 3D scene freezing after clicking "Start Chatting":
+1. init3D() in bundle.js returns immediately if #threeContainer already contains a <canvas> element (line: if (!container || container.querySelector("canvas")) return;).
+2. stop3D() only cancels the animation frame (cancelAnimationFrame) but never removes the old canvas from the DOM, never calls renderer.dispose(), and never nulls out scene/camera/renderer/particles/floaters/aiCore.
+3. hideWelcomeScreen() runs this sequence: stop3D(), then after a setTimeout calls init3D() again. Since the old canvas is still in the container, the second init3D() call does nothing, and the animation freezes forever on its last rendered frame.
+4. Clicking enter-chat-btn also sets localStorage arys_welcome_dismissed to "true", so on every subsequent page load initApp() takes the "dismissed" branch, which itself calls hideWelcomeScreen() and re-triggers the same broken stop3D → init3D sequence immediately. That's why a normal refresh never fixes it — only clearing site data (which wipes arys_welcome_dismissed) temporarily restores the welcome screen, since that path builds a fresh canvas from scratch.
+
+Required fix:
+- Write/use a proper dispose3D function that actually removes the canvas from #threeContainer (canvas.parentNode.removeChild(canvas)), calls renderer.dispose() and disposes all geometries/materials, and resets/nulls every module-level variable (scene, camera, renderer, particles, floaters, aiCore, rotatingObjects, animationId).
+- In hideWelcomeScreen() (and anywhere else the 3D scene is meant to restart), replace the stop3D() call with the full dispose3D() so the next init3D() call is actually able to build a new canvas (since the querySelector("canvas") guard will no longer block it).
+- Simpler alternative: don't destroy/rebuild the canvas at all during the welcome→chat transition — just resume the animation loop without calling init3D() again, or change init3D()'s guard so that if isRunning is false but a canvas already exists, it just resumes animation (isRunning = true; animate();) instead of returning early.
+- Also resolve which file is the actual source of truth for deployment: either add a real build step that automatically regenerates bundle.js from the modular docs/js/*.js files (and wire that into package.json/CI), or, if the bundle is maintained by hand, delete or clearly mark the unused modular files (app.js, welcome.js, 3d.js, chat.js, etc. in docs/js) as dead code so future edits don't target the wrong file again.
+- After applying the fix, verify on the live deployed URL (not just locally) by: loading the site fresh, clicking "Start Chatting", confirming the 3D scene keeps animating, then hard-refreshing on the chat screen and confirming it still works without needing to clear site data.
