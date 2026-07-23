@@ -14,9 +14,7 @@
   "devDependencies": {
     "eslint": "^8.0.0",
     "prettier": "^3.0.0",
-    "wrangler": "^3.0.0",
-    "puppeteer": "^25.3.0",
-    "selenium-webdriver": "^4.46.0"
+    "wrangler": "^3.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
