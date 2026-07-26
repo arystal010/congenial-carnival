@@ -565,6 +565,19 @@ function initWelcomeScreen(onEnter) {
         });
     }
 
+    // Magnetic hover on Start Chatting button
+    enterBtn.addEventListener("mousemove", (e) => {
+        const rect = enterBtn.getBoundingClientRect();
+        const cx = rect.left + rect.width  / 2;
+        const cy = rect.top  + rect.height / 2;
+        const dx = (e.clientX - cx) * 0.35;
+        const dy = (e.clientY - cy) * 0.35;
+        enterBtn.style.transform = `translateY(-3px) translate(${dx}px, ${dy}px)`;
+    });
+    enterBtn.addEventListener("mouseleave", () => {
+        enterBtn.style.transform = '';
+    });
+
     // Touch ripple effect on button
     enterBtn.addEventListener("pointerdown", (e) => {
         const rect = enterBtn.getBoundingClientRect();
@@ -1073,11 +1086,13 @@ function toggleSidebar() {
 // 3D BACKGROUND
 // ============================================================
 let scene, camera, renderer;
-let particles, floaters = [];
+let particles, nebula, floaters = [];
 let aiCore, rotatingObjects = [];
 let animationId = null;
 let isRunning = false;
 let performanceMode = false;
+let mouseX = 0, mouseY = 0;        // normalised -1..1
+let camTargetX = 0, camTargetY = 5; // smooth camera target
 
 function init3D() {
     if (isRunning) return;
@@ -1110,10 +1125,14 @@ function init3D() {
         renderer.setClearColor(0x000000, 0);
         container.appendChild(renderer.domElement);
 
-        createParticleSystem(particleCount);
+        createParticleSystem(performanceMode ? 60 : 150);
+        createNebulaCloud(performanceMode ? 40 : 100);
         createFloaters(floaterCount);
+        createEnergyVortex();
         createAICore();
 
+        // Mouse parallax on welcome screen
+        document.addEventListener("mousemove", onMouseMove3D);
         window.addEventListener("resize", debounce(onResize, 250));
         isRunning = true;
         animate();
@@ -1133,35 +1152,57 @@ function createParticleSystem(count) {
 
     for (let i = 0; i < count; i++) {
         const theta = Math.random() * Math.PI * 2;
-        const phi = Math.random() * Math.PI;
-        const radius = 25 + Math.random() * 15;
-
-        positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+        const phi = Math.acos(2 * Math.random() - 1); // uniform sphere
+        const radius = 20 + Math.random() * 30;
+        positions[i * 3]     = radius * Math.sin(phi) * Math.cos(theta);
         positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
         positions[i * 3 + 2] = radius * Math.cos(phi) - 10;
-
-        sizes[i] = 0.1 + Math.random() * 0.3;
-        const colorFactor = 0.8 + Math.random() * 0.4;
-        colors[i * 3] = colorFactor;
-        colors[i * 3 + 1] = colorFactor;
-        colors[i * 3 + 2] = colorFactor;
+        sizes[i] = 0.08 + Math.random() * 0.35;
+        // Slight warm/cool variation: mostly white, some faint blue or purple tinge
+        const r = 0.85 + Math.random() * 0.15;
+        const g = 0.85 + Math.random() * 0.15;
+        const b = 0.90 + Math.random() * 0.10;
+        colors[i * 3] = r; colors[i * 3 + 1] = g; colors[i * 3 + 2] = b;
     }
-
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute("size", new THREE.BufferAttribute(sizes, 1));
-    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-
+    geometry.setAttribute("size",     new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute("color",    new THREE.BufferAttribute(colors, 3));
     const material = new THREE.PointsMaterial({
-        size: 0.15,
-        vertexColors: true,
-        transparent: true,
-        opacity: 0.7,
-        blending: THREE.AdditiveBlending,
-        sizeAttenuation: true,
+        size: 0.18, vertexColors: true, transparent: true, opacity: 0.85,
+        blending: THREE.AdditiveBlending, sizeAttenuation: true,
     });
-
     particles = new THREE.Points(geometry, material);
     scene.add(particles);
+}
+
+function createNebulaCloud(count) {
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+    const sizes = new Float32Array(count);
+    for (let i = 0; i < count; i++) {
+        // Concentrated in a disc-like nebula around center
+        const angle = Math.random() * Math.PI * 2;
+        const r = 4 + Math.random() * 14;
+        const height = (Math.random() - 0.5) * 8;
+        positions[i * 3]     = r * Math.cos(angle);
+        positions[i * 3 + 1] = height;
+        positions[i * 3 + 2] = r * Math.sin(angle) - 8;
+        sizes[i] = 0.05 + Math.random() * 0.2;
+        // Ethereal blue/white
+        const b = 0.7 + Math.random() * 0.3;
+        const rg = 0.5 + Math.random() * 0.4;
+        colors[i * 3] = rg * 0.7; colors[i * 3 + 1] = rg * 0.85; colors[i * 3 + 2] = b;
+    }
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute("color",    new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute("size",     new THREE.BufferAttribute(sizes, 1));
+    const material = new THREE.PointsMaterial({
+        size: 0.12, vertexColors: true, transparent: true, opacity: 0.55,
+        blending: THREE.AdditiveBlending, sizeAttenuation: true,
+    });
+    nebula = new THREE.Points(geometry, material);
+    scene.add(nebula);
 }
 
 function createFloaters(count) {
@@ -1237,107 +1278,140 @@ function createFloaters(count) {
     }
 }
 
-function createAICore() {
-    const coreGeometry = new THREE.SphereGeometry(2.2, 32, 32);
-    const coreMaterial = new THREE.MeshBasicMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.04,
-    });
-
-    aiCore = new THREE.Mesh(coreGeometry, coreMaterial);
-    // Offset slightly so no geometry edge aligns with screen center
-    aiCore.position.set(0.5, 0.3, -10);
-
-    const ringCount = 3;
-    const ringGroup = new THREE.Group();
-
-    for (let i = 0; i < ringCount; i++) {
-        const ringGeometry = new THREE.TorusGeometry(2.8 + i * 0.6, 0.15, 8, 32);
-        const ringMaterial = new THREE.MeshBasicMaterial({
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.12 - i * 0.03,
-            side: THREE.DoubleSide,
+function createEnergyVortex() {
+    // Large sweeping rings orbiting the scene center
+    const configs = [
+        { radius: 8,  tube: 0.06, rot: [0, 0, 0],               speed:  0.0018, axis: 'y' },
+        { radius: 11, tube: 0.05, rot: [Math.PI/3, 0, 0],        speed: -0.0012, axis: 'x' },
+        { radius: 14, tube: 0.04, rot: [0, Math.PI/4, Math.PI/5],speed:  0.0008, axis: 'z' },
+        { radius: 6,  tube: 0.08, rot: [Math.PI/2, 0, 0],        speed: -0.0025, axis: 'y' },
+    ];
+    const group = new THREE.Group();
+    configs.forEach((c, i) => {
+        const geo = new THREE.TorusGeometry(c.radius, c.tube, 6, 80);
+        const mat = new THREE.MeshBasicMaterial({
+            color: 0xffffff, transparent: true,
+            opacity: 0.18 - i * 0.03, blending: THREE.AdditiveBlending,
         });
+        const ring = new THREE.Mesh(geo, mat);
+        ring.rotation.set(...c.rot);
+        ring.userData = { rotationSpeed: c.speed, rotationAxis: c.axis, baseMat: mat };
+        group.add(ring);
+        rotatingObjects.push(ring);
+    });
+    group.position.set(0, 0, -8);
+    scene.add(group);
+}
 
-        const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+function createAICore() {
+    // Glowing inner sphere
+    const coreGeo = new THREE.SphereGeometry(1.6, 24, 24);
+    const coreMat = new THREE.MeshBasicMaterial({
+        color: 0xffffff, transparent: true, opacity: 0.06,
+    });
+    aiCore = new THREE.Mesh(coreGeo, coreMat);
+    aiCore.position.set(0, 0, -8);
+    aiCore.userData = { rotationSpeed: 0.0008, rotationAxis: 'y', baseMat: coreMat };
 
-        if (i === 0) {
-            ring.rotation.x = Math.PI / 4;
-        } else if (i === 1) {
-            ring.rotation.y = Math.PI / 4;
-        } else {
-            ring.rotation.z = Math.PI / 4;
-        }
-
+    // 5 orbital rings at random tilts
+    const ringGroup = new THREE.Group();
+    for (let i = 0; i < 5; i++) {
+        const rGeo = new THREE.TorusGeometry(2.2 + i * 0.45, 0.05 + (4-i)*0.01, 6, 48);
+        const rMat = new THREE.MeshBasicMaterial({
+            color: 0xffffff, transparent: true,
+            opacity: 0.22 - i * 0.03, blending: THREE.AdditiveBlending,
+        });
+        const ring = new THREE.Mesh(rGeo, rMat);
+        ring.rotation.set(
+            (Math.PI / 5) * i,
+            (Math.PI / 7) * i,
+            (Math.PI / 9) * i
+        );
         ring.userData = {
-            rotationSpeed: (0.002 + i * 0.001) * (Math.random() > 0.5 ? 1 : -1),
-            rotationAxis: i === 0 ? 'x' : i === 1 ? 'y' : 'z',
+            rotationSpeed: (0.003 + i * 0.0008) * (i % 2 === 0 ? 1 : -1),
+            rotationAxis: ['x','y','z','x','y'][i],
+            baseMat: rMat,
         };
-
         ringGroup.add(ring);
         rotatingObjects.push(ring);
     }
-
     aiCore.add(ringGroup);
     scene.add(aiCore);
     rotatingObjects.push(aiCore);
-    aiCore.userData = {
-        rotationSpeed: 0.001,
-        rotationAxis: 'y',
-    };
+}
+
+function onMouseMove3D(e) {
+    mouseX = (e.clientX / window.innerWidth  - 0.5) * 2;
+    mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+    // Update CSS custom props for spotlight glow
+    document.documentElement.style.setProperty('--mouse-x', e.clientX + 'px');
+    document.documentElement.style.setProperty('--mouse-y', e.clientY + 'px');
 }
 
 function animate() {
     if (!isRunning) return;
     animationId = requestAnimationFrame(animate);
-
     const time = Date.now() * 0.001;
 
+    // Smooth camera parallax following mouse
+    if (camera) {
+        camTargetX = mouseX * 4;
+        camTargetY = -mouseY * 3 + 5;
+        camera.position.x += (camTargetX - camera.position.x) * 0.04;
+        camera.position.y += (camTargetY - camera.position.y) * 0.04;
+        camera.lookAt(0, 0, 0);
+    }
+
+    // Outer star field drift
     if (particles) {
-        const positions = particles.geometry.attributes.position.array;
-        const sizes = particles.geometry.attributes.size.array;
-
-        for (let i = 0; i < positions.length; i += 3) {
-            const depthFactor = 1 - Math.abs(positions[i + 2]) / 50;
-            positions[i] += Math.sin(time * 0.5 + i * 0.1) * 0.01 * depthFactor;
-            positions[i + 1] += Math.cos(time * 0.3 + i * 0.1) * 0.015 * depthFactor;
-            sizes[i / 3] = 0.15 + Math.sin(time * 2 + i) * 0.05;
+        const pos = particles.geometry.attributes.position.array;
+        const sz  = particles.geometry.attributes.size.array;
+        for (let i = 0; i < pos.length; i += 3) {
+            const df = 1 - Math.abs(pos[i+2]) / 60;
+            pos[i]   += Math.sin(time * 0.4 + i * 0.07) * 0.008 * df;
+            pos[i+1] += Math.cos(time * 0.25 + i * 0.07) * 0.01  * df;
+            sz[i/3]   = 0.12 + Math.sin(time * 1.8 + i * 0.3) * 0.06;
         }
-
         particles.geometry.attributes.position.needsUpdate = true;
         particles.geometry.attributes.size.needsUpdate = true;
     }
 
+    // Inner nebula slow rotation + pulse
+    if (nebula) {
+        nebula.rotation.y += 0.0006;
+        nebula.rotation.x  = Math.sin(time * 0.15) * 0.1;
+        nebula.material.opacity = 0.45 + Math.sin(time * 0.8) * 0.1;
+    }
+
+    // Floaters
     if (floaters.length > 0) {
         floaters.forEach((mesh, idx) => {
-            const data = mesh.userData;
-            mesh.rotation.x += data.rotSpeedX;
-            mesh.rotation.y += data.rotSpeedY;
-            mesh.rotation.z += data.rotSpeedZ || 0;
-            mesh.position.y += Math.sin(time * data.floatSpeed + data.phase) * 0.008 * data.floatAmp;
-            const scale = data.scalePulse * (1 + Math.sin(time * 1.5 + idx) * 0.05);
-            mesh.scale.set(scale, scale, scale);
+            const d = mesh.userData;
+            mesh.rotation.x += d.rotSpeedX;
+            mesh.rotation.y += d.rotSpeedY;
+            mesh.rotation.z += d.rotSpeedZ || 0;
+            mesh.position.y += Math.sin(time * d.floatSpeed + d.phase) * 0.007 * d.floatAmp;
+            const s = d.scalePulse * (1 + Math.sin(time * 1.3 + idx) * 0.04);
+            mesh.scale.set(s, s, s);
         });
     }
 
+    // Rotating vortex rings + AI core — with opacity pulse
     if (rotatingObjects.length > 0) {
-        rotatingObjects.forEach(obj => {
-            const data = obj.userData;
-            if (data.rotationAxis === 'x') {
-                obj.rotation.x += data.rotationSpeed;
-            } else if (data.rotationAxis === 'y') {
-                obj.rotation.y += data.rotationSpeed;
-            } else if (data.rotationAxis === 'z') {
-                obj.rotation.z += data.rotationSpeed;
+        rotatingObjects.forEach((obj, idx) => {
+            const d = obj.userData;
+            if (d.rotationAxis === 'x') obj.rotation.x += d.rotationSpeed;
+            else if (d.rotationAxis === 'y') obj.rotation.y += d.rotationSpeed;
+            else if (d.rotationAxis === 'z') obj.rotation.z += d.rotationSpeed;
+            // Pulse the opacity
+            if (d.baseMat) {
+                const baseOp = d.baseMat.opacity;
+                obj.material.opacity = baseOp * (0.75 + Math.sin(time * 0.9 + idx * 0.7) * 0.25);
             }
         });
     }
 
-    if (renderer && scene && camera) {
-        renderer.render(scene, camera);
-    }
+    if (renderer && scene && camera) renderer.render(scene, camera);
 }
 
 function onResize() {
@@ -1420,6 +1494,12 @@ function dispose3D() {
         if (particles.material) particles.material.dispose();
         particles = null;
     }
+    if (nebula) {
+        if (nebula.geometry) nebula.geometry.dispose();
+        if (nebula.material) nebula.material.dispose();
+        nebula = null;
+    }
+    document.removeEventListener("mousemove", onMouseMove3D);
     // Dispose floaters
     floaters.forEach(f => {
         if (f.geometry) f.geometry.dispose();
