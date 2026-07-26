@@ -104,6 +104,7 @@ body {
     background: var(--bg-primary);
     color: var(--text-primary);
     min-height: 100vh;
+    min-height: 100dvh;
     overflow: hidden;
     line-height: 1.6;
     height: 100%;
@@ -226,7 +227,6 @@ ul, ol {
     align-items: center;
     justify-content: center;
     z-index: 2;
-    position: relative;
     overflow: hidden;
 }
 
@@ -246,9 +246,12 @@ ul, ol {
 .welcome-content {
     text-align: center;
     max-width: 560px;
-    padding: 60px 24px;
+    padding: clamp(24px, 5vh, 60px) 24px;
     position: relative;
     z-index: 1;
+    overflow-y: auto;
+    max-height: 100vh;
+    max-height: 100dvh;
 }
 
 .welcome-logo {
@@ -473,7 +476,7 @@ ul, ol {
 #chat-screen {
     display: flex;
     z-index: 1;
-    position: relative;
+    overflow: hidden;
     opacity: 0;
     transition: opacity 0.4s ease;
 }
@@ -491,7 +494,7 @@ ul, ol {
     flex-shrink: 0;
     transition: margin-left var(--transition-base), transform var(--transition-base);
     z-index: 10;
-    height: 100vh;
+    height: 100%;
     overflow: hidden;
     margin-left: calc(-1 * var(--sidebar-width));
 }
@@ -1646,7 +1649,9 @@ ul, ol {
     .sidebar {
         position: fixed;
         transform: translateX(-100%);
+        margin-left: 0;
         height: 100vh;
+        height: 100dvh;
     }
 
     .sidebar.open {
