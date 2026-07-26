@@ -11,7 +11,7 @@
 const CONFIG = {
     // API - Point to the Cloudflare Worker
     // Use relative path for same-origin or update to your worker URL
-    apiBase: "",
+    apiBase: "https://congenial-carnival.ackcrp.workers.dev",
     chatEndpoint: "/chat",
     feedbackEndpoint: "/feedback",
     healthEndpoint: "/health",
@@ -552,7 +552,7 @@ function initWelcomeScreen(onEnter) {
     if (welcomeSettingsBtn) {
         welcomeSettingsBtn.addEventListener("click", () => {
             const settingsModal = $("#settings-modal");
-            if (settingsModal) settingsModal.classList.add("active");
+            if (settingsModal) { settingsModal.classList.remove("hidden"); settingsModal.classList.add("active"); }
         });
     }
 
@@ -561,7 +561,7 @@ function initWelcomeScreen(onEnter) {
     if (feedbackFromWelcome) {
         feedbackFromWelcome.addEventListener("click", () => {
             const feedbackModal = $("#feedback-modal");
-            if (feedbackModal) feedbackModal.classList.add("active");
+            if (feedbackModal) { feedbackModal.classList.remove("hidden"); feedbackModal.classList.add("active"); }
         });
     }
 
@@ -674,11 +674,11 @@ function setupChatEventListeners() {
 function setupChatHeaderButtons() {
     const openFeedback = () => {
         const feedbackModal = $("#feedback-modal");
-        if (feedbackModal) feedbackModal.classList.add("active");
+        if (feedbackModal) { feedbackModal.classList.remove("hidden"); feedbackModal.classList.add("active"); }
     };
     const openSettings = () => {
         const settingsModal = $("#settings-modal");
-        if (settingsModal) settingsModal.classList.add("active");
+        if (settingsModal) { settingsModal.classList.remove("hidden"); settingsModal.classList.add("active"); }
     };
 
     // Chat header buttons
