@@ -156,13 +156,8 @@ export async function performSearch(query, apiKey, options = {}) {
     };
 
     const startTime = Date.now();
-    const encodedQuery = encodeURIComponent(query);
-    const endpoints = [
-        `${API_BASE}/search?query=${encodedQuery}&limit=${depth}`,
-        `${API_BASE}/search?q=${encodedQuery}&count=${depth}`,
-    ];
+    const endpoint = `${API_BASE}/search`;
 
-    // If no API key, still try without it (may work for public tier)
     const headers = {
         "Content-Type": "application/json",
     };
@@ -176,15 +171,18 @@ export async function performSearch(query, apiKey, options = {}) {
         diag.attempts++;
         diag.retryCount = attempt;
 
-        for (const endpoint of endpoints) {
-            const epLabel = endpoint.split("?")[0];
-            diag.endpoints.push(epLabel);
+        {
+            diag.endpoints.push(endpoint);
             diag.timestamps.push(new Date().toISOString());
 
             try {
                 const response = await fetchWithTimeout(
                     endpoint,
-                    { method: "GET", headers },
+                    {
+                        method: "POST",
+                        headers,
+                        body: JSON.stringify({ query, limit: depth }),
+                    },
                     TIMEOUT_MS
                 );
 
