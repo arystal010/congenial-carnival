@@ -249,9 +249,6 @@ ul, ol {
     padding: clamp(24px, 5vh, 60px) 24px;
     position: relative;
     z-index: 1;
-    overflow-y: auto;
-    max-height: 100vh;
-    max-height: 100dvh;
 }
 
 .welcome-logo {
