@@ -96,6 +96,7 @@ html {
     -moz-osx-font-smoothing: grayscale;
     scroll-behavior: smooth;
     height: 100%;
+    overflow: hidden;
     text-rendering: optimizeLegibility;
 }
 
