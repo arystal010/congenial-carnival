@@ -1241,13 +1241,13 @@ function createAICore() {
     const coreGeometry = new THREE.SphereGeometry(2.2, 32, 32);
     const coreMaterial = new THREE.MeshBasicMaterial({
         color: 0xffffff,
-        wireframe: true,
         transparent: true,
-        opacity: 0.08,
+        opacity: 0.04,
     });
 
     aiCore = new THREE.Mesh(coreGeometry, coreMaterial);
-    aiCore.position.set(0, 0, -10);
+    // Offset slightly so no geometry edge aligns with screen center
+    aiCore.position.set(0.5, 0.3, -10);
 
     const ringCount = 3;
     const ringGroup = new THREE.Group();
