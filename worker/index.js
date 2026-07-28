@@ -6,6 +6,7 @@
 import { handleChatRequest } from "./router.js";
 import { handleHealthRequest } from "./health.js";
 import { handleFeedbackRequest } from "./openrouter.js";
+import { handleBillingRequest } from "./billing/routes.js";
 
 // ============================================================
 // Main entry — handle all incoming requests
@@ -24,6 +25,11 @@ export default {
             // Feedback submission
             if (path === "/feedback" || path === "/api/feedback") {
                 return handleFeedbackRequest(request, env);
+            }
+
+            // Plans and crypto billing
+            if (path === "/api/plans" || path.startsWith("/api/billing/")) {
+                return handleBillingRequest(request, env, path);
             }
 
             // Chat completion (main endpoint)
